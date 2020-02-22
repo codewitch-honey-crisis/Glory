@@ -1,0 +1,21 @@
+﻿// really ambiguous
+Expression<start,type="int">= Expression add Expression | Expression sub Expression | integer => {
+    if(integer==node.SymbolId)
+	     return node.Value;
+	if(!node.IsNonTerminal)
+	   return 0;
+	int result = Expression1;
+	int i = 2;
+	while (i<Length) 
+	{
+		if(SymbolId[i-1]==add)
+			result += Expression[i];
+		else // sub
+			result -= Expression[i];
+		i+=2;
+	}
+	return result;
+}
+integer= '[0-9]+';
+add= '\+';
+sub= '\-';
