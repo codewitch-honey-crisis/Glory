@@ -73,6 +73,7 @@ namespace Glory
 			string codenamespace = null;
 			string codelanguage = null;
 			string codeclass = null;
+			string yaccfile = null;
 			bool verbose = false;
 			bool noshared = false;
 			bool ifstale = false;
@@ -118,6 +119,12 @@ namespace Glory
 								throw new ArgumentException(string.Format("The parameter \"{0}\" is missing an argument", args[i].Substring(1)));
 							++i; // advance 
 							outputfile = args[i];
+							break;
+						case "/yacc":
+							if (args.Length - 1 == i) // check if we're at the end
+								throw new ArgumentException(string.Format("The parameter \"{0}\" is missing an argument", args[i].Substring(1)));
+							++i; // advance 
+							yaccfile = args[i];
 							break;
 						case "/ifstale":
 							ifstale = true;
@@ -202,8 +209,30 @@ namespace Glory
 						}
 					}
 				}
-				
-				
+
+				oi = doc.Options.IndexOf("yaccfile");
+				if (-1 < oi)
+				{
+					var o = doc.Options[oi].Value;
+					var s = o as string;
+					if (null != s)
+					{
+						rolexfile = s;
+						if ("" == yaccfile)
+							yaccfile = null;
+					}
+					// if it's specified in the doc we need to make it doc relative
+					if (null != yaccfile)
+					{
+						if (!Path.IsPathRooted(yaccfile))
+						{
+							var dir = Path.GetDirectoryName(Path.GetFullPath(inputfile));
+							rolexfile = Path.GetFullPath(Path.Combine(dir, yaccfile));
+						}
+					}
+				}
+
+
 				oi = doc.Options.IndexOf("codenamespace");
 				if (-1 < oi)
 				{
@@ -269,7 +298,10 @@ namespace Glory
 					if (!stale && null != rolexfile)
 						if (_IsStale(inputfile, rolexfile))
 							stale = true;
-	
+					if (!stale && null != yaccfile)
+						if (_IsStale(inputfile, yaccfile))
+							stale = true;
+
 					if (!stale)
 					{
 						var files = XbnfDocument.GetResources(inputfile);
@@ -296,7 +328,9 @@ namespace Glory
 						stderr.WriteLine("Output file: " + outputfile);
 					if (null != rolexfile)
 						stderr.WriteLine("Rolex file: " + rolexfile);
-					
+					if (null != yaccfile)
+						stderr.WriteLine("YACC file: " + yaccfile);
+
 				}
 				else
 				{
@@ -305,6 +339,8 @@ namespace Glory
 						stderr.WriteLine("Output file: " + outputfile);
 					if (null != rolexfile)
 						stderr.WriteLine("Rolex file: " + rolexfile);
+					if (null != yaccfile)
+						stderr.WriteLine("YACC file: " + yaccfile);
 					if (string.IsNullOrEmpty(codelanguage))
 					{
 						if (!string.IsNullOrEmpty(outputfile))
@@ -447,7 +483,17 @@ namespace Glory
 						output.Close();
 						output = null;
 					}
-					
+					if (null != yaccfile)
+					{
+						var sw = new StreamWriter(yaccfile);
+						sw.BaseStream.SetLength(0);
+						output = sw;
+						output.WriteLine(genInfo.Cfg.ToString("y"));
+						output.Flush();
+						output.Close();
+						output = null;
+					}
+
 				}
 			}
 #if !DEBUG

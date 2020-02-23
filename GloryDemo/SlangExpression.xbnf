@@ -20,7 +20,6 @@ MemberInvokeRef = "(" MethodArgList ")";
 MemberIndexerRef = "[" ArgList "]";
 MemberAnyRef<collapsed> = MemberFieldRef | MemberInvokeRef | MemberIndexerRef ;
 MethodArg = [ outKeyword | refKeyword ] Expression;
-TypeRef = Type;
 IntrinsicType=	boolType	|
 				charType	|
 				stringType	|
@@ -51,9 +50,6 @@ NewArrayPart<collapsed>= ArraySpec;
 ArrayInitializer= "{" [ Expression { "," Expression } ] "}";
 SubExpression<collapsed> = "(" Expression ")";
 UnaryExpression= ("+"|"-"|"!"|"++"|"--") UnaryExpression | CastExpression | PrimaryExpression;
-FieldRef<dependency>= Identifier { MemberAnyRef };
-TypeOrFieldRef = ( Identifier | IntrinsicType )	{ MemberAnyRef } | (Type) {MemberAnyRef}+ ;
-
 PrimaryExpression=	
 		verbatimStringLiteral { MemberAnyRef }				|
 		characterLiteral { MemberAnyRef }					|
@@ -68,7 +64,8 @@ PrimaryExpression=
 		NewExpression { MemberAnyRef }						|
 		thisRef { MemberAnyRef }							|
 		baseRef { MemberAnyRef }							|
-		TypeOrFieldRef { MemberAnyRef } 					;
+		Identifier { MemberAnyRef }							|
+		Type MemberFieldRef { MemberAnyRef }				;
 		
 // Identifier exists as a non-terminal solely to attach a semantic constraint to identifiers.
 // we collapse it because we don't need it in the final parse tree but in the grammar 

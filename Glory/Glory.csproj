@@ -110,6 +110,7 @@
       <LastGenOutput>json.log</LastGenOutput>
     </None>
     <None Include="Key.snk" />
+    <None Include="SlangExpression.xbnf" />
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -343,6 +343,7 @@ namespace Glory
 			genInfo.Xbnf = document;
 			genInfo.TerminalMap = tmap;
 			genInfo.Cfg = cfg;
+			cfg.RebuildCache();
 			return result;
 
 		}

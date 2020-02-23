@@ -1,9 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace GloryDemo
 {
@@ -45,7 +40,7 @@ namespace GloryDemo
 					Console.WriteLine(Test2Parser.Evaluate(pt));
 				}
 			}
-			input = "(int)(1+2)";
+			input = "(int)foo.bar * baz";
 			var seTokenizer = new SlangExpressionTokenizer(input);
 			var seParser = new SlangExpressionParser(seTokenizer);
 			foreach (var pt in seParser.ParseReductions())

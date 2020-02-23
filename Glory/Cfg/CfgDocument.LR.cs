@@ -14,44 +14,51 @@ namespace Glory
 		{
 			if (null != progress)
 				progress.Report(new CfgLRProgress(CfgLRStatus.ComputingStates, 0));
+			var moves = new Dictionary<KeyValuePair<_LR0ItemSet, string>, _LR0ItemSet>();
 			// TODO: this takes a long time sometimes
-			var map = new Dictionary<ICollection<_LR0Item>, _LRFA>(_LR0ItemSetComparer.Default);
+			var map = new Dictionary<_LR0ItemSet, _LRFA>();
 			// create an augmented grammar - add rule {start} -> [[StartId]] 
 			var ss = StartSymbol;
 			var start = new CfgRule(GetAugmentedStartId(ss), new string[] { ss });
-			var cl = new HashSet<_LR0Item>();
-			cl.Add(new _LR0Item(start, 0));
+			var cl = new _LR0ItemSet();
+			cl.AddItem(new _LR0Item(start, 0));
 			
 			_FillLRClosureInPlace(progress, cl);
 			var lrfa = new _LRFA();
 			lrfa.Accept = cl;
-			var items = cl.Count;
+			var items = cl.Items.Count;
 			map.Add(cl, lrfa);
 			var done = false;
-			var oc = 0;
+			int oc;
 			while (!done)
 			{
 				done = true;
-				var arr = new ICollection<_LR0Item>[map.Keys.Count];
+				var arr = new _LR0ItemSet[map.Keys.Count];
 				map.Keys.CopyTo(arr, 0);
 				for (var i = 0; i < arr.Length; ++i)
 				{
 					var itemSet = arr[i];
-					foreach (var item in itemSet)
+					foreach (var item in itemSet.Items)
 					{
 						var next = item.Next;
 						if (!item.IsEnd)
 						{
-							
-							var n = _FillLRMove(itemSet, next, progress);
-							if (0>_IndexOfItemSet(map.Keys, n))
+
+							_LR0ItemSet n;
+							var key = new KeyValuePair<_LR0ItemSet, string>(itemSet, next);
+							if (!moves.TryGetValue(key, out n))
+							{
+								n = _FillLRMove(itemSet, next, progress);
+								moves.Add(key, n);
+							}
+							if (!map.ContainsKey(n))
 							{
 								done = false;
 
 								var npda = new _LRFA();
 								npda.Accept = n;
 								map.Add(n, npda);
-								items += n.Count;
+								items += n.Items.Count;
 								if (null != progress)
 									progress.Report(new CfgLRProgress(CfgLRStatus.ComputingConfigurations, items));
 							}
@@ -70,12 +77,12 @@ namespace Glory
 			}
 			return lrfa;
 		}
-		ICollection<_LR0Item> _FillLRMove(IEnumerable<_LR0Item> itemSet, string input, IProgress<CfgLRProgress> progress, ICollection<_LR0Item> result = null)
+		_LR0ItemSet _FillLRMove(_LR0ItemSet itemSet, string input, IProgress<CfgLRProgress> progress, _LR0ItemSet result = null)
 		{
 			if (null == result)
-				result = new HashSet<_LR0Item>();
+				result = new _LR0ItemSet();
 			int i = 0;
-			foreach (var item in itemSet)
+			foreach (var item in itemSet.Items)
 			{
 				if (null != progress)
 					progress.Report(new CfgLRProgress(CfgLRStatus.ComputingMove, i));
@@ -85,8 +92,7 @@ namespace Glory
 					if (Equals(next, input))
 					{
 						var lri = new _LR0Item(item.Left,item.Right, item.RightIndex + 1);
-						if (!result.Contains(lri))
-							result.Add(lri);	
+						result.AddItem(lri);	
 					}
 				}
 				++i;
@@ -96,39 +102,25 @@ namespace Glory
 		}
 		
 
-		static int _IndexOfItemSet(IEnumerable<ICollection<_LR0Item>> sets, ICollection<_LR0Item> set)
+		static int _IndexOfItemSet(IEnumerable<_LR0ItemSet> sets, _LR0ItemSet set)
 		{
 			var i = 0;
 			foreach (var lris in sets)
 			{
-				if (lris.Count == set.Count)
-				{
-					var found = true;
-					foreach (var l in lris)
-					{
-						if (!set.Contains(l))
-						{
-							found = false;
-							break;
-						}
-					}
-					if (found)
-					{
-						return i;
-					}
-				}
+				if (lris.Equals(set))
+					return i;
 				++i;
 			}
 			return -1;
 		}
-		void _FillLRClosureInPlace(IProgress<CfgLRProgress> progress, ICollection<_LR0Item> result)
+		void _FillLRClosureInPlace(IProgress<CfgLRProgress> progress, _LR0ItemSet result)
 		{
 			var done = false;
 			while (!done)
 			{
 				done = true;
-				var l = new _LR0Item[result.Count];
-				result.CopyTo(l, 0);
+				var l = new _LR0Item[result.Items.Count];
+				result.Items.CopyTo(l, 0);
 				for (var i = 0; i < l.Length; i++)
 				{
 					if (null != progress)
@@ -145,11 +137,8 @@ namespace Glory
 								if (r.Left == next)
 								{
 									var lri = new _LR0Item(r, 0);
-									if (!result.Contains(lri))
-									{
-										done = false;
-										result.Add(lri);
-									}				
+									if(result.AddItem(lri))
+										done = false;				
 								}
 							}
 						}
@@ -167,7 +156,7 @@ namespace Glory
 			var closure = new List<_LRFA>();
 			parseTable = new CfgLR1ParseTable();
 
-			var itemSets = new List<ICollection<_LR0Item>>();
+			var itemSets = new List<_LR0ItemSet>();
 
 			lrfa.FillClosure(closure);
 			var i = 0;
@@ -190,7 +179,7 @@ namespace Glory
 						(idx, null, null)
 						);	
 				}
-				foreach (var item in p.Accept)
+				foreach (var item in p.Accept.Items)
 				{
 					if (item.IsEnd && Equals(item.Left, start))
 					{
@@ -287,7 +276,7 @@ namespace Glory
 			var closure = new List<_LRFA>();
 			parseTable = new CfgGlrParseTable();
 
-			var itemSets = new List<ICollection<_LR0Item>>();
+			var itemSets = new List<_LR0ItemSet>();
 
 			lrfa.FillClosure(closure);
 			var i = 0;
@@ -314,7 +303,7 @@ namespace Glory
 						(idx, null, null)
 						);
 				}
-				foreach (var item in p.Accept)
+				foreach (var item in p.Accept.Items)
 				{
 					if (item.IsEnd && Equals(item.Left, start))
 					{
@@ -420,7 +409,7 @@ namespace Glory
 		{
 			var result = new CfgDocument();
 			var closure = new List<_LRFA>();
-			var itemSets = new List<ICollection<_LR0Item>>();
+			var itemSets = new List<_LR0ItemSet>();
 			lrfa.FillClosure(closure);
 			foreach (var p in closure)
 			{
@@ -434,9 +423,9 @@ namespace Glory
 				if (null != progress)
 					progress.Report(new CfgLRProgress(CfgLRStatus.CreatingLRExtendedGrammar, j));
 
-				int si = _IndexOfItemSet(itemSets,p.Accept);
+				int si = itemSets.IndexOf(p.Accept);
 
-				foreach (var item in p.Accept)
+				foreach (var item in p.Accept.Items)
 				{
 					if (0 == item.RightIndex)
 					{
@@ -449,7 +438,7 @@ namespace Glory
 							if (p.Transitions.ContainsKey(item.Left))
 							{
 								dsts = p.Transitions[item.Left];
-								dst = _IndexOfItemSet(itemSets, dsts.Accept);
+								dst = itemSets.IndexOf( dsts.Accept);
 							}
 
 							_LRExtendedSymbol left = new _LRExtendedSymbol(si, item.Left, dst);
@@ -459,9 +448,9 @@ namespace Glory
 							var pc = p;
 							foreach (var sym in item.Right)
 							{
-								int s1 = _IndexOfItemSet(itemSets, pc.Accept);
+								int s1 = itemSets.IndexOf(pc.Accept);
 								var pt = pc.Transitions[sym];
-								int s2 = _IndexOfItemSet(itemSets, pt.Accept);
+								int s2 = itemSets.IndexOf(pt.Accept);
 								_LRExtendedSymbol n = new _LRExtendedSymbol(s1, sym, s2);
 								right.Add(n.ToString());
 								pc = pt;
@@ -554,34 +543,47 @@ namespace Glory
 		}
 		private struct _LR0Item : IEquatable<_LR0Item>, ICloneable
 		{
-			public const string Epsilon = "#EPSILON";
+			int _hashCode;
+			
 			public _LR0Item(string left, string[] right, int rightIndex)
 			{
-
 				Left = left;
+				_hashCode = left.GetHashCode();
 				if (0 == right.Length)
 				{
-					Right = new string[] { Epsilon };
+		
+					Right = new string[] {  };
 				}
 				else
 				{
 					Right = new string[right.Length];
-					Array.Copy(right, 0, Right, 0, right.Length);
+					for(var i = 0;i<right.Length;i++)
+					{
+						_hashCode ^= right[i].GetHashCode();
+						Right[i] = right[i];
+					}
 				}
+				_hashCode ^= rightIndex;
 				RightIndex = rightIndex;
 			}
 			public _LR0Item(CfgRule rule, int rightIndex)
 			{
 				Left = rule.Left;
-
+				_hashCode = Left.GetHashCode();
 				if (!rule.IsNil)
 				{
 					Right = new string[rule.Right.Count];
 					rule.Right.CopyTo(Right, 0);
+					for (var i = 0; i < Right.Length; i++)
+					{
+						var right = rule.Right[i];
+						_hashCode ^= right.GetHashCode();
+						Right[i] = right;
+					}
 				}
 				else
 					Right = new string[] { };
-
+				_hashCode ^= rightIndex;
 				RightIndex = rightIndex;
 			}
 			public bool IsNil {
@@ -589,8 +591,8 @@ namespace Glory
 					return 0 == Right.Length;
 				}
 			}
-			public string Left { get; set; }
-			public string[] Right { get; set; }
+			public string Left { get;}
+			public string[] Right { get; }
 
 			public string Next {
 				get {
@@ -599,7 +601,7 @@ namespace Glory
 					return null;
 				}
 			}
-			public int RightIndex { get; set; }
+			public int RightIndex { get; }
 
 			public bool IsEnd { get { return RightIndex == Right.Length; } }
 
@@ -623,6 +625,8 @@ namespace Glory
 			}
 			public bool Equals(_LR0Item rhs)
 			{
+				if (_hashCode != rhs._hashCode)
+					return false;
 				if (RightIndex != rhs.RightIndex)
 					return false;
 				if (Right.Length != rhs.Right.Length)
@@ -640,11 +644,7 @@ namespace Glory
 			}
 			public override int GetHashCode()
 			{
-				var result = RightIndex;
-				result ^= Left.GetHashCode();
-				for (var i = 0; i < Right.Length; ++i)
-					result ^= Right[i].GetHashCode();
-				return result;
+				return _hashCode;
 			}
 			public static bool operator ==(_LR0Item lhs, _LR0Item rhs)
 			{
@@ -660,6 +660,20 @@ namespace Glory
 			}
 			object ICloneable.Clone() => Clone();
 		}
+		private sealed class _LR0ItemSetRefComparer : IEqualityComparer<_LR0ItemSet>
+		{
+			public static readonly _LR0ItemSetRefComparer Default = new _LR0ItemSetRefComparer();
+			public bool Equals(_LR0ItemSet x, _LR0ItemSet y)
+			{
+				return ReferenceEquals(x, y);
+			}
+
+			public int GetHashCode(_LR0ItemSet obj)
+			{
+				return obj.GetHashCode();
+			}
+		}
+		/*
 		private sealed class _LR0ItemSetComparer : IEqualityComparer<ICollection<_LR0Item>>, IEqualityComparer<ISet<_LR0Item>>
 		{
 			public static readonly _LR0ItemSetComparer Default = new _LR0ItemSetComparer();
@@ -698,7 +712,7 @@ namespace Glory
 				return result;
 			}
 		}
-
+		*/
 		private sealed class _LRExtendedSymbol : IEquatable<_LRExtendedSymbol>
 		{
 			public int From;
@@ -760,7 +774,7 @@ namespace Glory
 		}
 		private sealed class _LRFA
 		{
-			public ICollection<_LR0Item> Accept = null;
+			public _LR0ItemSet Accept = null;
 			public readonly Dictionary<string, _LRFA> Transitions = new Dictionary<string, _LRFA>();
 			public ICollection<_LRFA> FillClosure(ICollection<_LRFA> result = null)
 			{
@@ -772,6 +786,56 @@ namespace Glory
 				foreach (var trns in Transitions)
 					trns.Value.FillClosure(result);
 				return result;
+			}
+		}
+		// used to just use a container like ICollection<_LR0Item> but too slow
+		private sealed class _LR0ItemSet : IEquatable<_LR0ItemSet>
+		{
+			int _hashCode;
+			public readonly HashSet<_LR0Item> Items; // do not modify this list
+
+			public _LR0ItemSet()
+			{
+				_hashCode = 0;
+				Items = new HashSet<_LR0Item>();
+			}
+			public bool AddItem(_LR0Item item)
+			{
+
+				if (Items.Add(item))
+				{
+					_hashCode ^= item.GetHashCode();
+					return true;
+				}
+				return false;
+			}
+			public override int GetHashCode()
+			{
+				return _hashCode;
+			}
+			public override bool Equals(object obj)
+			{
+				return Equals(obj as _LR0ItemSet);
+			}
+			public bool Equals(_LR0ItemSet rhs)
+			{
+				if (ReferenceEquals(this, rhs))
+					return true;
+				if (ReferenceEquals(rhs, null))
+					return false;
+				if (_hashCode != rhs._hashCode)
+					return false;
+				var ic = Items.Count;
+				if (ic != rhs.Items.Count)
+				{
+					return false;
+				}
+				if(!Items.SetEquals(rhs.Items))
+				{ 
+					return false;
+				}
+		
+				return true;
 			}
 		}
 	}
