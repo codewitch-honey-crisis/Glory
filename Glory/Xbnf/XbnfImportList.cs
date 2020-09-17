@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Glory
 {
-	public class XbnfIncludeList : List<XbnfInclude>
+	public class XbnfImportList : List<XbnfImport>
 	{
 	}
 }

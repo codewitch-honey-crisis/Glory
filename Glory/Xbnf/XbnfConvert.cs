@@ -153,7 +153,7 @@ namespace Glory
 
 		public static IList<IMessage> TryCreateGenerationInfo(XbnfDocument document, out XbnfGenerationInfo genInfo)
 		{
-			var includes = new XbnfIncludeList();
+			var includes = new XbnfImportList();
 			_GatherIncludes(document, includes);
 			var incs = new List<XbnfDocument>();
 			incs.Add(document);
@@ -164,7 +164,7 @@ namespace Glory
 
 			return _TryToGenInfo(doc, cfg, out genInfo);
 		}
-		static void _GatherIncludes(XbnfDocument doc, XbnfIncludeList result)
+		static void _GatherIncludes(XbnfDocument doc, XbnfImportList result)
 		{
 			for (int ic = doc.Includes.Count, i = 0; i < ic; ++i)
 			{

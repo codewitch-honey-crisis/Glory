@@ -85,8 +85,8 @@
     <Compile Include="Xbnf\XbnfException.cs" />
     <Compile Include="Xbnf\XbnfExpression.cs" />
     <Compile Include="Xbnf\XbnfGenerationInfo.cs" />
-    <Compile Include="Xbnf\XbnfInclude.cs" />
-    <Compile Include="Xbnf\XbnfIncludeList.cs" />
+    <Compile Include="Xbnf\XbnfImport.cs" />
+    <Compile Include="Xbnf\XbnfImportList.cs" />
     <Compile Include="Xbnf\XbnfLiteralExpression.cs" />
     <Compile Include="Xbnf\XbnfMessage.cs" />
     <Compile Include="Xbnf\XbnfNode.cs" />

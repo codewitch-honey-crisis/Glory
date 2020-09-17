@@ -11,7 +11,7 @@ namespace Glory
 		string _fileOrUrl;
 		public string FileOrUrl { get { return _fileOrUrl; } }
 		public void SetFilename(string filename) { _fileOrUrl = filename; }
-		public XbnfIncludeList Includes { get; } = new XbnfIncludeList();
+		public XbnfImportList Includes { get; } = new XbnfImportList();
 		public XbnfOptionList Options { get; } = new XbnfOptionList();
 		public XbnfProduction StartProduction {
 			get {
@@ -205,7 +205,7 @@ namespace Glory
 			for(int ic=Options.Count,i=0;i<ic;++i)
 				result.Options.Add(Options[i].Clone());
 			for (int ic = Includes.Count, i = 0; i < ic; ++i)
-				result.Includes.Add(new XbnfInclude(Includes[i].Document));
+				result.Includes.Add(new XbnfImport(Includes[i].Document));
 			for (int ic=Productions.Count,i=0;i<ic;++i)
 				result.Productions.Add(Productions[i].Clone());
 			return result;
@@ -550,7 +550,7 @@ namespace Glory
 				result.StartProduction = result.Productions[ss];
 			return result;
 		}
-		static XbnfInclude _ParseIncludePart(XbnfDocument doc, LexContext pc)
+		static XbnfImport _ParseIncludePart(XbnfDocument doc, LexContext pc)
 		{
 			pc.TrySkipCCommentsAndWhiteSpace();
 			var l = pc.Line;
@@ -568,7 +568,7 @@ namespace Glory
 			pc.Expecting(';');
 			pc.Advance();
 			var cmp = res.ToLowerInvariant();
-			var result = new XbnfInclude();
+			var result = new XbnfImport();
 			if (-1 < cmp.IndexOf("://"))
 				result.Document = XbnfDocument.ReadFromUrl(cmp);
 			else

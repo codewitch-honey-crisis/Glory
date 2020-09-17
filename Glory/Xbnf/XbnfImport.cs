@@ -3,13 +3,13 @@ using System.IO;
 
 namespace Glory
 {
-	public class XbnfInclude :XbnfNode
+	public class XbnfImport :XbnfNode
 	{
-		public XbnfInclude(XbnfDocument document)
+		public XbnfImport(XbnfDocument document)
 		{
 			Document = document;
 		}
-		public XbnfInclude()
+		public XbnfImport()
 		{
 
 		}
